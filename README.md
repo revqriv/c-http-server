@@ -1,6 +1,6 @@
 # Multithreaded C HTTP Server with In-Memory Cache
 
-A lightweight, low-level HTTP/1.1 web server written from scratch in pure C. Built using POSIX sockets, multithreading, and mutex-protected in-memory caching to handle concurrent requests efficiently without external dependencies.
+A lightweight, low-level HTTP/1.1 web server written from scratch in pure C. Built using TCP stream sockets, multithreading, and mutex-protected in-memory caching to handle concurrent requests efficiently without external dependencies.
 
 ## Features
 
