@@ -29,7 +29,7 @@ void *handle_client(void* client_ptr){
 	char buffer[1024] = {0};
         recv(client, buffer, sizeof(buffer), 0);
         char method[10], path[MAX_PATH];
-        sscanf(buffer, "%s %s", method, path);
+        sscanf(buffer, "%9s %99s", method, path);
         //printf("method: %s, path: %s\n", method, path);
 
         if(strlen(path)==0){ //to ignore backgrnd stuff,empty path
@@ -52,18 +52,23 @@ void *handle_client(void* client_ptr){
         	char response[MAX_RESPONSE];
                 if(strcmp(path, "/")==0){
                 	FILE *f=fopen("index.html","r");
+			if(f==NULL){
+				char *body="<h1>500 Internal Server Errror</h1>";
+				sprintf(response,"HTTP/1.1 500 Internal Server Error\r\nContent Length: %ld\r\n\r\n%s",strlen(body),body);
+			}
+			else{
+	                        fseek(f,0,SEEK_END);
+       		                long file_size=ftell(f);
+                	        fseek(f,0,SEEK_SET);
 
-                        fseek(f,0,SEEK_END);
-       	                long file_size=ftell(f);
-                        fseek(f,0,SEEK_SET);
-
-			char *body=malloc(file_size+1);
-
-                        fread(body,1,file_size,f);
-                        body[file_size]='\0';
-                        fclose(f);
-                        sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n%s",strlen(body),body);
-                        free(body);
+				char *body=malloc(file_size+1);
+	
+        	                fread(body,1,file_size,f);
+                	        body[file_size]='\0';
+                        	fclose(f);
+                     		sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n%s",strlen(body),body);
+                        	free(body);
+			}
             	}
                 else if(strcmp(path,"/about")==0){
                         char *body = "<h1>About Page</h1>";
