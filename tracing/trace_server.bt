@@ -1,0 +1,67 @@
+#!/usr/bin/env bpftrace
+
+//how many connections
+tracepoint:syscalls:sys_enter_accept
+/comm == "server1"/
+{
+    @total_connections++;
+    //printf("New connection #%d accepted\n", @total_connections);
+}
+
+uprobe:/usr/lib/x86_64-linux-gnu/libc.so.6:pthread_create
+{
+    @threads_created++;
+}
+
+//time taken to handle each client
+uprobe:./server1:handle_client
+{
+    @start[tid] = nsecs;
+}
+
+uretprobe:./server1:handle_client
+/@start[tid]/
+{
+    $duration_us = (nsecs - @start[tid]) / 1000;
+    @request_latency_us = hist($duration_us);
+    delete(@start[tid]);
+}
+
+//time taken for each mutex
+uprobe:/usr/lib/x86_64-linux-gnu/libc.so.6:pthread_mutex_lock
+/comm == "server1"/
+{
+    @lock_wait_start[tid] = nsecs;
+}
+
+uretprobe:/usr/lib/x86_64-linux-gnu/libc.so.6:pthread_mutex_lock
+/@lock_wait_start[tid]/
+{
+    $wait_ns = nsecs - @lock_wait_start[tid];
+    @mutex_wait_ns = hist($wait_ns);
+    delete(@lock_wait_start[tid]);
+}
+
+//count of cache misses
+uprobe:/usr/lib/x86_64-linux-gnu/libc.so.6:fopen
+/comm == "server1"/
+{
+    @cache_misses++;
+}
+
+// print stuff
+interval:s:5
+{
+    printf("\n=== Stats at %d seconds ===\n", elapsed / 1e9);
+    printf("Total connections: %d\n", @total_connections);
+    printf("Threads created: %d\n", @threads_created);
+    printf("Cache misses (fopen calls): %d\n", @cache_misses);
+    print(@request_latency_us);
+    print(@mutex_wait_ns);
+}
+
+END
+{
+    clear(@start);
+    clear(@lock_wait_start);
+}
