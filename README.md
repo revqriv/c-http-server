@@ -19,7 +19,7 @@ A lightweight, low-level HTTP/1.1 web server written from scratch in pure C. Bui
 ## Compilation and running
 
 * **1. Compile the server:**
-  `gcc -o server1 main.c -pthread`
+  `gcc server1.c -o server1 -pthread`
 
 * **2. Run the server:**
   `./server1`
